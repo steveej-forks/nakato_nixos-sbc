@@ -12,6 +12,8 @@
   ncurses,
   pkg-config,
   ubootTools,
+  openssl,
+  stdenv,
   ...
 }: rec {
   ubootBananaPiR3 = let
@@ -81,7 +83,7 @@
     .overrideAttrs (oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [pkg-config ncurses];
       patches = extraPatches;
-      makeFlags = ["DTC=${dtc}/bin/dtc"];
+      makeFlags = oldAttrs.makeFlags ++ ["DTC=${dtc}/bin/dtc"];
     });
 
   # TODO: Remove fip from extraMakeFlags, and do not pass uboot into this build.
@@ -89,7 +91,17 @@
   # Build uboot, build this, commbine the two with fiptool create --soc-fw bl32.bin --nt-fw u-boot.bin u-boot.fip
   armTrustedFirmwareMT7986 =
     (buildArmTrustedFirmware rec {
-      extraMakeFlags = ["USE_MKIMAGE=1" "DRAM_USE_DDR4=1" "BOOT_DEVICE=sdmmc" "BL33=${ubootBananaPiR3}/u-boot.bin" "all" "fip"];
+      depsBuildBuild = [];
+
+      extraMakeFlags = [
+        "HOSTCC=${stdenv.cc.targetPrefix}gcc"
+        "USE_MKIMAGE=1"
+        "DRAM_USE_DDR4=1"
+        "BOOT_DEVICE=sdmmc"
+        "BL33=${ubootBananaPiR3}/u-boot.bin"
+        "all"
+        "fip"
+      ];
       platform = "mt7986";
       extraMeta.platforms = ["aarch64-linux"];
       filesToInstall = ["build/${platform}/release/bl2.img" "build/${platform}/release/fip.bin"];

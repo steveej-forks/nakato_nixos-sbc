@@ -52,6 +52,20 @@
           self.nixosModules.boards.bananapi.bpir3
         ];
       };
+
+      bananapi-bpir3_cross = bootstrapSystem {
+        modules = [
+          self.nixosModules.boards.bananapi.bpir3
+          {
+            nixpkgs.buildPlatform.system = "x86_64-linux";
+            nixpkgs.hostPlatform.system = "aarch64-linux";
+
+            # the default gives 'no space left' errors on a 32GB SDcard
+            sbc.bootstrap.rootFilesystem = "btrfs";
+          }
+        ];
+      };
+
       pine64-rock64v2 = bootstrapSystem {
         modules = [
           self.nixosModules.boards.pine64.rock64v2
