@@ -8,10 +8,12 @@
   fetchFromGitHub,
   lib,
   linuxKernel,
-  linux_6_7,
+  linux_6_9,
   ncurses,
   pkg-config,
   ubootTools,
+  openssl,
+  stdenv,
   ...
 }: rec {
   ubootBananaPiR3 = let
@@ -81,7 +83,7 @@
     .overrideAttrs (oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [pkg-config ncurses];
       patches = extraPatches;
-      makeFlags = ["DTC=${dtc}/bin/dtc"];
+      makeFlags = oldAttrs.makeFlags ++ ["DTC=${dtc}/bin/dtc"];
     });
 
   # TODO: Remove fip from extraMakeFlags, and do not pass uboot into this build.
@@ -89,7 +91,17 @@
   # Build uboot, build this, commbine the two with fiptool create --soc-fw bl32.bin --nt-fw u-boot.bin u-boot.fip
   armTrustedFirmwareMT7986 =
     (buildArmTrustedFirmware rec {
-      extraMakeFlags = ["USE_MKIMAGE=1" "DRAM_USE_DDR4=1" "BOOT_DEVICE=sdmmc" "BL33=${ubootBananaPiR3}/u-boot.bin" "all" "fip"];
+      depsBuildBuild = [];
+
+      extraMakeFlags = [
+        "HOSTCC=${stdenv.cc.targetPrefix}gcc"
+        "USE_MKIMAGE=1"
+        "DRAM_USE_DDR4=1"
+        "BOOT_DEVICE=sdmmc"
+        "BL33=${ubootBananaPiR3}/u-boot.bin"
+        "all"
+        "fip"
+      ];
       platform = "mt7986";
       extraMeta.platforms = ["aarch64-linux"];
       filesToInstall = ["build/${platform}/release/bl2.img" "build/${platform}/release/fip.bin"];
@@ -106,7 +118,7 @@
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [dtc ubootTools];
     });
 
-  linuxPacakges_6_7_bananaPiR3 = linuxKernel.packagesFor (linux_6_7.override {
+  linuxPackages_6_9_bananaPiR3 = linuxKernel.packagesFor (linux_6_9.override {
     kernelPatches = [
       {
         # Cold boot PCIe/NVMe have stability issues.
@@ -128,7 +140,9 @@
 
     structuredExtraConfig = with lib.kernel; {
       # Disable extremely unlikely features to reduce build storage requirements and time.
-      DRM = no;
+      FB = lib.mkForce no;
+      DRM.tristate = lib.mkForce null;
+      DRM_SIMPLEDRM.tristate = lib.mkForce null;
       SOUND = no;
       INFINIBAND = lib.mkForce no;
 
@@ -175,5 +189,5 @@
       REGULATOR_MT6380 = yes;
     };
   });
-  linuxPacakges_latest_bananaPiR3 = linuxPacakges_6_7_bananaPiR3;
+  linuxPacakges_latest_bananaPiR3 = linuxPackages_6_9_bananaPiR3;
 }
