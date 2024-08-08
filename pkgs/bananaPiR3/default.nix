@@ -7,6 +7,7 @@
   lib,
   linuxKernel,
   linux_6_9,
+  linux_6_10,
   ncurses,
   pkg-config,
   ubootTools,
@@ -139,5 +140,77 @@
       REGULATOR_MT6380 = yes;
     };
   });
-  linuxPackages_latest_bananaPiR3 = linuxPackages_6_9_bananaPiR3;
+
+  linuxPackages_6_10_bananaPiR3 = linuxKernel.packagesFor (linux_6_10.override {
+    kernelPatches = [
+      {
+        # Cold boot PCIe/NVMe have stability issues.
+        # See: https://forum.banana-pi.org/t/bpi-r3-problem-with-pcie/15152
+        #
+        # FrankW's first patch added a 100ms sleep, this was rejected upstream.
+        # Jianjun posted a patch to the forum for testing, and it appears to me
+        # to have accidentally missed a write to the registers between the two
+        # sleeps.  This version is modified to include the write, and results
+        # in the PCI bridge appearing reliably, but not the NVMe device.
+        #
+        # Without this patch, the PCI bridge is not present, and rescan does
+        # not discover it.  Removing the bridge and then rescanning repeatably
+        # gets the NVMe working on cold-boot.
+        name = "PCI: mediatek-gen3: handle PERST after reset";
+        patch = ./linux-mtk-pcie.patch;
+      }
+    ];
+
+    structuredExtraConfig = with lib.kernel; {
+      # Disable extremely unlikely features to reduce build storage requirements and time.
+      FB = lib.mkForce no;
+      DRM = lib.mkForce no;
+      SOUND = no;
+      INFINIBAND = lib.mkForce no;
+
+      # PCIe
+      PCIE_MEDIATEK = yes;
+      PCIE_MEDIATEK_GEN3 = yes;
+      # SD/eMMC
+      MTD_NAND_ECC_MEDIATEK = yes;
+      # Net
+      BRIDGE = yes;
+      HSR = yes;
+      NET_DSA = yes;
+      NET_DSA_TAG_MTK = yes;
+      NET_DSA_MT7530 = yes;
+      NET_VENDOR_MEDIATEK = yes;
+      PCS_MTK_LYNXI = yes;
+      NET_MEDIATEK_SOC_WED = yes;
+      NET_MEDIATEK_SOC = yes;
+      NET_MEDIATEK_STAR_EMAC = yes;
+      MEDIATEK_GE_PHY = yes;
+      # WLAN
+      WLAN = yes;
+      WLAN_VENDOR_MEDIATEK = yes;
+      MT76_CORE = module;
+      MT76_LEDS = yes;
+      MT76_CONNAC_LIB = module;
+      MT7915E = module;
+      MT798X_WMAC = yes;
+      # Pinctrl
+      EINT_MTK = yes;
+      PINCTRL_MTK = yes;
+      PINCTRL_MT7986 = yes;
+      # Thermal
+      MTK_THERMAL = yes;
+      MTK_SOC_THERMAL = yes;
+      MTK_LVTS_THERMAL = yes;
+      # Clk
+      COMMON_CLK_MEDIATEK = yes;
+      COMMON_CLK_MEDIATEK_FHCTL = yes;
+      COMMON_CLK_MT7986 = yes;
+      COMMON_CLK_MT7986_ETHSYS = yes;
+      # other
+      MEDIATEK_WATCHDOG = yes;
+      REGULATOR_MT6380 = yes;
+    };
+  });
+
+  linuxPackages_latest_bananaPiR3 = linuxPackages_6_10_bananaPiR3;
 }
