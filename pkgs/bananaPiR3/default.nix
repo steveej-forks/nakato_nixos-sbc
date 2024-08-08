@@ -62,11 +62,11 @@
       src = fetchFromGitHub {
         owner = "mtk-openwrt";
         repo = "arm-trusted-firmware";
-        # mtksoc HEAD 2023-03-10
-        rev = "7539348480af57c6d0db95aba6381f3ee7483779";
-        hash = "sha256-OjM+metlaEzV7mXA8QHYEQd94p8zK34dLTqbyWQh1bQ=";
+        # mtksoc HEAD 2024-08-07
+        rev = "bacca82a8cac369470df052a9d801a0ceb9b74ca";
+        hash = "sha256-n5D3styntdoKpVH+vpAfDkCciRJjCZf9ivrI9eEdyqw=";
       };
-      version = "2.7.0-mtk";
+      version = "2.10.0-mtk";
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [dtc ubootTools];
     });
 
