@@ -159,6 +159,11 @@
         name = "PCI: mediatek-gen3: handle PERST after reset";
         patch = ./linux-mtk-pcie.patch;
       }
+
+      {
+        name = "mac80211: workaround for AP_VLAN packets";
+        patch = ./linux-mac80211-vlan.patch;
+      }
     ];
 
     structuredExtraConfig = with lib.kernel; {
