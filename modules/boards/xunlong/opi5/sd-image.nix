@@ -1,14 +1,8 @@
 {
   config,
   pkgs,
-  sbcPkgs,
   ...
-}: let
-  rock64Uboot =
-    if config.sbc.board.pine64.rock64.hardwareRevision == "v2"
-    then sbcPkgs.ubootRock64v2
-    else sbcPkgs.ubootRock64;
-in {
+}: {
   system.build.sdImage = pkgs.callPackage (
     {
       stdenv,
@@ -18,7 +12,7 @@ in {
       uboot,
       zstd,
     }: let
-      name = "nixos-sd-${config.sbc.board.vendor}-${config.sbc.board.model}${config.sbc.board.pine64.rock64.hardwareRevision}";
+      name = "nixos-sd-${config.sbc.board.vendor}-${config.sbc.board.model}";
       compress = true;
       imageName = "${name}-v${config.sbc.version}.raw";
     in
@@ -52,8 +46,10 @@ in {
 
           ## Sector Math
           rkStage1Start=64
-          rkStage1End=16383
-
+          rkStage1End=7167
+          # vnvm follows stage1 (IDB)
+          # vnvm contains MAC addresses and other vendor data
+          # vnvmStart=7168
           rkStage2Start=16384
           rkStage2End=32767
 
@@ -89,5 +85,5 @@ in {
           fi
         '';
       }
-  ) {uboot = rock64Uboot;};
+  ) {uboot = config.sbc.board.xunlong.opi5.ubootPackage;};
 }

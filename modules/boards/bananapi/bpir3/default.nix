@@ -47,18 +47,24 @@ in {
         console = true;
       };
 
-      wifi.devices.wifi.status = "okay";
+      wifi.devices.wifi = {
+        status = "okay";
+        enableMethod.moduleLoad = ["mt7915e"];
+        disableMethod.dtOverlay.enable = true;
+        enable = lib.mkDefault config.sbc.wireless.wifi.enable;
+      };
     };
 
     # Custom kernel is required as a lot of MTK components misbehave when built as modules.
     # They fail to load properly, leaving the system without working ethernet, they'll oops on
     # remove. MTK-DSA parts and PCIe were observed to do this.
-    boot.kernelPackages = sbcPkgs.linuxPacakges_latest_bananaPiR3;
+    boot.kernelPackages = lib.mkDefault sbcPkgs.linuxPackages_latest_bananaPiR3;
 
     # We exclude a number of modules included in the default list. A non-insignificant amount do
     # not apply to embedded hardware like this, so simply skip the defaults.
     boot.initrd.includeDefaultModules = false;
     boot.initrd.kernelModules = ["mii"];
+    boot.initrd.availableKernelModules = ["nvme"];
 
     hardware.deviceTree.filter = "mt7986a-bananapi-bpi-r3.dtb";
     hardware.deviceTree.overlays = [

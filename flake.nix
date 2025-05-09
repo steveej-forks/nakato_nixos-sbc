@@ -8,36 +8,21 @@
     nixpkgs,
     ...
   }: let
-    systems = ["aarch64-linux" "riscv64-linux"];
-    forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
-
-    bootstrapSystem = {
-      modules,
-      system ? "aarch64-linux",
-      ...
-    } @ config:
-      nixpkgs.lib.nixosSystem (
-        config
-        // {
-          inherit system;
-          modules =
-            modules
-            ++ [
-              self.nixosModules.default
-              {
-                sbc.bootstrap.initialBootstrapImage = true;
-                sbc.version = "0.2";
-              }
-            ];
-        }
-      );
+    _lib = import ./lib {
+      inherit nixpkgs self;
+      lib = nixpkgs.lib;
+    };
+    inherit (_lib) bootstrapSystem forAllSystems forSupportedSystems;
   in {
+    # Exposed for build tooling
+    inherit _lib;
+
     formatter = forAllSystems (
       system:
         nixpkgs.legacyPackages.${system}.alejandra
     );
 
-    packages = forAllSystems (
+    packages = forSupportedSystems (
       system: let
         pkgs = nixpkgs.legacyPackages.${system};
       in
@@ -45,11 +30,30 @@
     );
 
     nixosModules = import ./modules;
+    # deviceBuilder is an unstable API.  I'm throwing it in quickly
+    # to unblock my usage.
+    deviceBuilder = {
+      rtc.ds3231 = import ./lib/devices/rtc/ds3231/create.nix;
+    };
 
     nixosConfigurations = {
       bananapi-bpir3 = bootstrapSystem {
         modules = [
           self.nixosModules.boards.bananapi.bpir3
+        ];
+      };
+      bananapi-bpir3_cross = bootstrapSystem {
+        modules = [
+          self.nixosModules.boards.bananapi.bpir3
+          {
+            nixpkgs.buildPlatform.system = "x86_64-linux";
+            nixpkgs.hostPlatform.system = "aarch64-linux";
+          }
+        ];
+      };
+      bananapi-bpir4 = bootstrapSystem {
+        modules = [
+          self.nixosModules.boards.bananapi.bpir4
         ];
       };
       pine64-rock64v2 = bootstrapSystem {
@@ -65,6 +69,11 @@
       raspberrypi-rpi4 = bootstrapSystem {
         modules = [
           self.nixosModules.boards.raspberrypi.rpi4
+        ];
+      };
+      xunlong-opi5b = bootstrapSystem {
+        modules = [
+          self.nixosModules.boards.xunlong.opi5b
         ];
       };
     };
